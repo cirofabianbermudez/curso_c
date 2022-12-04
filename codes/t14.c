@@ -1,0 +1,94 @@
+/* Read number of inputs and inputs from a text file and compute average and max
+ * the result is display in the terminal and in a text file.
+ * Author: Ciro Bermudez
+ * Compile: gcc -o output.exe t14.c
+ * Execute: ./output.exe data.txt results.txt
+ * data.txt      5 10 9 8 7 6
+*/
+#include <stdio.h>
+#include <stdlib.h>
+
+void print_array(FILE *p,int array[], int size);
+void read_data(FILE *p, int array[]);
+double average(int array[], int size);
+int max(int array[], int size);
+
+int main(int argc, char *argv[]){
+    /* Check number of terminal inputs */
+    if (argc != 3) {
+        printf("ERROR: The program needs two arguments: <input-file-name> <output-file-name>\n");
+        exit(1);
+    }
+
+    FILE *ifp, *ofp;
+    /* Open two files, one for reading and one for writing */
+    ifp = fopen(argv[1], "r");
+    ofp = fopen(argv[2], "w");
+
+    /* Both outputs in a array of file pointers*/
+    FILE *outp[]  = {stdout, ofp};
+    int array_size = 0;
+    int *data;
+    double avg = 0.0;
+    int max_val = 0;
+
+    /*Read first element of input text file*/
+    fscanf(ifp,"%d", &array_size);
+    /* Dynamically assing memory*/
+    data = (int *)malloc( array_size * sizeof(int) );
+
+    /* Check for errors */
+    if (data == NULL) {
+        printf("Memory not allocated\n");
+        exit(1);
+    }
+
+    read_data(ifp, data);
+    avg = average(data, array_size);
+    max_val = max(data, array_size);
+
+    /* Print in both terminal and output file*/
+    for (int i = 0; i < 2; i++) {
+        fprintf(outp[i], "The data consist of %d elements:\n", array_size);
+        print_array(outp[i], data, array_size);
+        fprintf(outp[i],"The average value of the data is: %lf\nThe maximum value of the data is: %d\n", avg, max_val);
+    }
+
+    /* Close files */
+    fclose(ifp);
+    fclose(ofp);
+
+    return 0;
+}
+
+void print_array(FILE *p,int array[], int size){
+    for (int i = 0; i < size; i++) {
+        fprintf(p,"%3d ", array[i] );
+    }
+    fprintf(p,"\n");
+}
+
+void read_data(FILE *p, int array[]){
+    int i = 0;
+    while ( fscanf(p,"%d", &array[i]) == 1) {
+        i++;
+    }
+}
+
+double average(int array[], int size){
+    double avg = 0.0;
+    for(int i = 0; i < size; i++){
+        avg += ( array[i] - avg ) / (i + 1);
+    } 
+    return avg;
+}
+
+int max(int array[], int size){
+    int max = array[0];
+    for (int i = 1; i < size; i++) {
+        if (max < array[i]) {
+            max = array[i];
+        }
+    }
+    return max;
+}

@@ -1,0 +1,4 @@
+The data consist of 5 elements:
+ 10   9   8   7   6 
+The average value of the data is: 8.000000
+The maximum value of the data is: 10

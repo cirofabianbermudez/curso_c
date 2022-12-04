@@ -1,0 +1,113 @@
+/* Calculate next date program using struct and enum encapsulation.
+ * Author: Ciro Bermudez
+ * Compile: gcc -o output.exe t7.c
+*/
+#include <stdio.h>
+
+enum month {JAN, FEB, MAR, APR, MAY, JUN, JUL, AUG, SEP, OCT, NOV, DEC};
+typedef enum month month;
+
+struct date {
+    month mth;
+    int day;
+};
+typedef struct date date;
+
+month next_month(month current_month){
+    return (current_month + 1) % 12;
+}
+
+void print_date(date c_date){
+    int day = c_date.day;
+    switch (c_date.mth) {
+        case JAN: printf("January %d", day);   break;
+        case FEB: printf("February %d", day);  break;
+        case MAR: printf("March %d", day);     break;
+        case APR: printf("April %d", day);     break;
+        case MAY: printf("May %d", day);       break;
+        case JUN: printf("June %d", day);      break;
+        case JUL: printf("July %d", day);      break;
+        case AUG: printf("August %d", day);    break;
+        case SEP: printf("September %d", day); break;
+        case OCT: printf("October %d", day);   break;
+        case NOV: printf("November %d", day);  break;
+        case DEC: printf("December %d", day);  break;
+        default: printf(" Not a valid month");
+    }
+}
+
+void next_day(date *c_date){
+
+    int cond_1, cond_2, cond_3;
+
+    /* moth under test*/
+    month t_mth = (c_date -> mth);
+
+    /* cond_1: check for special case of february */
+    cond_1 = (t_mth == FEB) && ( (c_date -> day) == 28 );
+
+    /* cond_2: check for months with 30 days */
+    cond_2 = ( (c_date -> day) == 30 ) && ( (t_mth == APR) || (t_mth == JUN) || (t_mth == SEP) || (t_mth == NOV) );
+
+    /* cond_3: check if day is 31, no need to check month */
+    cond_3 = ( (c_date -> day) == 31 );
+
+    if (cond_1 || cond_2 || cond_3) {
+        (c_date -> day) = 1;
+        (c_date -> mth) = next_month( c_date -> mth );
+    } else {
+        (c_date -> day)++;
+    }
+
+}
+
+
+int main(void){
+
+    /* dut: date under test*/
+    date dut;
+
+    /* Firt test*/
+    dut = (date) {JAN, 1};
+    print_date(dut);
+    putchar('\n');
+    next_day(&dut);
+    print_date(dut);
+    printf("\n\n");
+
+    /* Second test*/
+    dut = (date) {FEB, 28};
+    print_date(dut);
+    putchar('\n');
+    next_day(&dut);
+    print_date(dut);
+    printf("\n\n");
+    
+    /* Third test*/
+    dut = (date) {MAR, 14};
+    print_date(dut);
+    putchar('\n');
+    next_day(&dut);
+    print_date(dut);
+    printf("\n\n");
+
+    /* Fourth test*/
+    dut = (date) {OCT, 31};
+    print_date(dut);
+    putchar('\n');
+    next_day(&dut);
+    print_date(dut);
+    printf("\n\n");
+    
+    /* Fifth test*/
+    dut = (date) {DEC, 31};
+    print_date(dut);
+    putchar('\n');
+    next_day(&dut);
+    print_date(dut);
+    printf("\n\n");
+
+    return 0;
+}
+
+

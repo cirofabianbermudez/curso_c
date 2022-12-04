@@ -1,0 +1,224 @@
+/* Seven-Card Stud probabilities
+ * Author: Ciro Bermudez
+ * Date: 16/10/2022
+ * Compile: gcc -o output.exe t9.c
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define DECK_SIZE   52
+#define HAND_SIZE   7
+#define PIPS_SIZE   13
+
+enum suit {CLUBS, DIAMONDS, HEARTS, SPADES};
+typedef enum suit suit;
+
+struct card {
+    suit c_suit;
+    short pips;
+};
+typedef struct card card;
+
+/* Function prototiypes for quicksort algorithm*/
+void print_array(int array[], int length);
+void swap(int *x, int *y);
+int  partition(int array[], int low, int high);
+void quicksort_recursion(int array[], int low, int high);
+void quicksort(int array[], int length);
+
+/* Function prototypes for card structures, deck of cards*/
+void initialize_deck(card deck[DECK_SIZE]);
+void swap_card(card *x, card *y);
+void shuffle_deck(card deck[DECK_SIZE]);
+void print_deck(const card deck[DECK_SIZE]);
+void get_hand(const card deck[DECK_SIZE], int hand[], int round, int length);
+void checks(int hand[], int length, int *others, int *no_pair, int *pair, int *two_pair, int *three, int *four, int *full_house);
+
+int main(void){
+    /* Seed random number generator*/
+    srand(time(NULL));
+    int others = 0, no_pair_cnt = 0, pair_cnt = 0, two_pair_cnt = 0, three_cnt = 0, four_cnt = 0, full_cnt = 0;
+    int hand[HAND_SIZE];
+    int iter = 1e6;
+    int total = 0;
+
+    /* Create deck and initialize it*/
+    card deck[DECK_SIZE];
+    initialize_deck(deck);
+    
+    /* Shuffle -> For 7 rounds -> Deal 7 card -> Sort hand -> Check type of hand -> increase match*/
+    for (int i = 0; i < iter; i++) {
+        shuffle_deck(deck);
+        for (int round = 1; round <= 7; round++) {
+            get_hand(deck, hand, round, HAND_SIZE);
+            quicksort(hand, HAND_SIZE);
+            checks(hand, HAND_SIZE, &others, &no_pair_cnt,&pair_cnt, &two_pair_cnt, &three_cnt, &four_cnt, &full_cnt);
+        }
+    }
+ 
+     /* Display results */
+    total = others + no_pair_cnt + pair_cnt + two_pair_cnt + three_cnt + four_cnt + full_cnt;
+    printf("%18s%20s%20s\n","Hand","Combinations","Probabities");
+    printf("%18s%20s%20s\n","----","------------","-----------");
+    printf("%18s%20d%20.8lf\n", "Four of a kind", four_cnt, (double)four_cnt / total);
+    printf("%18s%20d%20.8lf\n", "Full house", full_cnt, (double)full_cnt / total);
+    printf("%18s%20d%20.8lf\n", "Three of a kind", three_cnt, (double)three_cnt / total);
+    printf("%18s%20d%20.8lf\n", "Two Pair", two_pair_cnt, (double)two_pair_cnt / total);
+    printf("%18s%20d%20.8lf\n", "Pair", pair_cnt, (double)pair_cnt / total);
+    printf("%18s%20d%20.8lf\n", "No Pair", no_pair_cnt, (double)no_pair_cnt / total);
+    printf("%18s%20d%20.8lf\n", "Others", others, (double)others / total);
+    printf("%18s%20s%20s\n","----","------------","-----------");
+    printf("%18s%20d%20.8lf\n", "TOTAL", total, (double)total / total);
+
+    return 0;
+}
+
+/*----------------------------------------------------------*/
+/*----------------------------------------------------------*/
+/*------ Functions for card structure, deck of cards -------*/
+/*----------------------------------------------------------*/
+/*----------------------------------------------------------*/
+
+/* Initialize the 52 cards of poker */
+void initialize_deck(card deck[52]){
+    for (int i = 0; i < DECK_SIZE; i++) {
+        deck[i] = (card) {i / PIPS_SIZE, (i % PIPS_SIZE) + 1};
+    }
+}
+
+/* Swap suit and pips of two cards */
+void swap_card(card *x, card *y){
+    card temp = *x;
+    *x = *y;
+    *y = temp;
+}
+
+/* Randomly swap each card of the deck at least once */
+void shuffle_deck(card deck[DECK_SIZE]){
+    //srand(time(NULL));
+    int j;
+    int n_shuffles = 1;
+    for (int k = 0; k < n_shuffles; k++) {
+        for (int i = 0; i < DECK_SIZE; i++){
+            /* Random number between 0 and 51*/
+            j = rand() % (DECK_SIZE - 1 + 1);
+            swap_card(&deck[i], &deck[j]);
+        }
+    }
+}
+
+/* Print the 52 deck of cards*/
+void print_deck(const card deck[DECK_SIZE]){
+    for (int i = 0; i < DECK_SIZE; i++) {
+        printf("Suit: %d, Pips: %d\n", deck[i].c_suit, deck[i].pips);
+    }
+}
+
+/* deal the cards*/
+void get_hand(const card deck[DECK_SIZE], int hand[], int round, int length){
+    for (int i = 0; i < length; i++) {
+        hand[i] = deck[ (round - 1)*length + i].pips;
+    }
+}
+
+/* Checks various types of hands and increment counters respectly */
+void checks(int hand[], int length, int *other, int *no_pair, int *pair, int *two_pair, int *three, int *four, int *full_house){
+    int cnt = 0;
+    int two_c = 0;
+    int three_c = 0;
+    int four_c = 0;
+
+    for (int i = 0; i < length - 1; i++) {
+        if ( hand[i] == hand[i+1]) {
+            cnt++;
+        } else {
+            cnt = 0;
+        }
+
+        if (cnt == 1) {
+            two_c++;
+        } else if (cnt == 2) {
+            three_c++;
+            two_c--;
+        } else if (cnt == 3 ) {
+            four_c++;
+            three_c--;
+        }
+    }
+
+    if (two_c == 0 && three_c == 0 && four_c == 0) {
+        *no_pair = *no_pair + 1;
+    } else if (two_c == 1 && three_c == 0 && four_c == 0) {
+        *pair = *pair + 1;
+    } else if (two_c == 2 && three_c == 0 && four_c == 0) {
+        *two_pair = *two_pair + 1;
+    } else if (two_c == 0 && three_c == 1 && four_c == 0) {
+        *three = *three + 1;
+    } else if (two_c == 0 && three_c == 0 && four_c == 1) {
+        *four = *four + 1;
+    } else if (two_c == 1 && three_c == 1 && four_c == 0) {
+        *full_house = *full_house + 1;
+    } else {
+        *other = *other + 1;
+    }
+}
+
+/*----------------------------------------------------------*/
+/*----------------------------------------------------------*/
+/*----------- Functions for quicksort algorithm ------------*/
+/*----------------------------------------------------------*/
+/*----------------------------------------------------------*/
+
+void print_array(int array[], int length){
+    for (int i = 0; i < length; i++) {
+        printf("%d ", array[i]);
+    }
+    printf("\n");
+}
+
+/* Simple swap function*/
+void swap(int *x, int *y){
+    int temp = *x;
+    *x =  *y;
+    *y = temp;
+}
+
+/* partition algorithm with random pivot implemented*/
+int partition(int array[], int low, int high){
+    int pivot_index = low + (rand() % (high - low + 1));
+
+    if (pivot_index != high) {
+        swap(&array[pivot_index], &array[high]);
+    }
+  
+    int pivot_value = array[high];
+    int i = low; 
+
+    for (int j = low; j < high; j++) {
+        if (array[j] <= pivot_value) {
+            swap(&array[i], &array[j]);
+            i++;
+        }
+    }
+
+    swap(&array[i], &array[high]);
+
+    return i;
+}
+
+/* quicksort recursive function */
+void quicksort_recursion(int array[], int low, int high){
+    if (low < high) {
+        int pivot_index = partition(array, low, high);
+        quicksort_recursion(array, low, pivot_index - 1);
+        quicksort_recursion(array, pivot_index + 1, high);
+    }
+}
+
+/* quicksort algorithm wrapper */
+void quicksort(int array[], int length){
+    //srand(time(NULL));
+    quicksort_recursion(array, 0, length - 1);
+}
+
